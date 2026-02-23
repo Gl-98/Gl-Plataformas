@@ -1337,6 +1337,7 @@
                 if (isWhite) {
                     let maxEval = -Infinity;
                     for (const move of legalMoves) {
+                        if (timeLimitMs && Date.now() - startTime > timeLimitMs) break;
                         const newBoard = board.copy();
                         newBoard.makeMove(move.fromRow, move.fromCol, move);
                         const evaluation = this.minimax(newBoard, depth - 1, alpha, beta, false, startTime, timeLimitMs);
@@ -1363,6 +1364,7 @@
                 } else {
                     let minEval = Infinity;
                     for (const move of legalMoves) {
+                        if (timeLimitMs && Date.now() - startTime > timeLimitMs) break;
                         const newBoard = board.copy();
                         newBoard.makeMove(move.fromRow, move.fromCol, move);
                         const evaluation = this.minimax(newBoard, depth - 1, alpha, beta, true, startTime, timeLimitMs);
@@ -1390,10 +1392,10 @@
             }
 
             getBestMove(board, isWhite) {
-                return this.getBestMoveTimed(board, isWhite, 900);
+                return this.getBestMoveTimed(board, isWhite, 350);
             }
 
-            getBestMoveTimed(board, isWhite, timeLimitMs = 900) {
+            getBestMoveTimed(board, isWhite, timeLimitMs = 350) {
                 const openingMove = this.getOpeningMove(board, isWhite);
                 if (openingMove) return openingMove;
 
@@ -1500,23 +1502,37 @@
                 }
 
                 console.log('IA tentando fazer movimento... Total de movimentos: ' + legalMoves.length);
-                const move = this.ai.getBestMove(this.board, false) || legalMoves[Math.floor(Math.random() * legalMoves.length)];
-                console.log('Movimento selecionado:', move);
-                
-                if (move) {
-                    console.log(`Máquina jogando: (${move.fromRow},${move.fromCol}) -> (${move.destRow},${move.destCol})`);
-                    this.board.makeMove(move.fromRow, move.fromCol, move);
-                    this.isWhiteTurn = true;
-                    this.checkGameStatus();
-                    this.render();
-                    
-                    // Se o jogo não acabou, permanecer em modo de espera para o próximo movimento do jogador
-                    if (!this.gameOver) {
-                        console.log('Aguardando movimento do jogador...');
+                setTimeout(() => {
+                    if (this.gameOver) return;
+
+                    let move = null;
+                    try {
+                        move = this.ai.getBestMove(this.board, false);
+                    } catch (error) {
+                        console.error('Erro na IA, usando jogada fallback:', error);
                     }
-                } else {
-                    console.log('Nenhum movimento encontrado! (erro)');
-                }
+
+                    if (!move) {
+                        move = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+                    }
+
+                    console.log('Movimento selecionado:', move);
+
+                    if (move) {
+                        console.log(`Máquina jogando: (${move.fromRow},${move.fromCol}) -> (${move.destRow},${move.destCol})`);
+                        this.board.makeMove(move.fromRow, move.fromCol, move);
+                        this.isWhiteTurn = true;
+                        this.checkGameStatus();
+                        this.render();
+
+                        // Se o jogo não acabou, permanecer em modo de espera para o próximo movimento do jogador
+                        if (!this.gameOver) {
+                            console.log('Aguardando movimento do jogador...');
+                        }
+                    } else {
+                        console.log('Nenhum movimento encontrado! (erro)');
+                    }
+                }, 10);
             }
 
             checkGameStatus() {
