@@ -1363,6 +1363,22 @@
                 return this.getBestMoveTimed(board, isWhite, 250);
             }
 
+            getFastMove(board, isWhite) {
+                const legalMoves = board.getAllLegalMoves(isWhite);
+                let bestMove = null;
+                let bestScore = -Infinity;
+                for (const move of legalMoves) {
+                    const tempBoard = board.copy();
+                    tempBoard.makeMove(move.fromRow, move.fromCol, move);
+                    const score = this.evaluateBoard(tempBoard, isWhite);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = move;
+                    }
+                }
+                return bestMove || legalMoves[Math.floor(Math.random() * legalMoves.length)];
+            }
+
             getBestMoveTimed(board, isWhite, timeLimitMs = 250) {
                 const openingMove = this.getOpeningMove(board, isWhite);
                 if (openingMove) return openingMove;
@@ -1415,6 +1431,7 @@
                 this.board = new ChessBoard();
                 this.ai = new ChessAI(3);
                 this.mode = mode;
+                this.fastAIMode = true;
                 this.selectedSquare = null;
                 this.gameOver = false;
                 this.gameStatus = '';
@@ -1482,7 +1499,9 @@
 
                     let move = null;
                     try {
-                        move = this.ai.getBestMove(this.board, false);
+                        move = this.fastAIMode
+                            ? this.ai.getFastMove(this.board, false)
+                            : this.ai.getBestMove(this.board, false);
                     } catch (error) {
                         console.error('Erro na IA, usando jogada fallback:', error);
                     }
