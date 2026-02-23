@@ -1195,49 +1195,17 @@
                     }
                 }
 
-                // 4. MOBILIDADE - Flexibilidade estratégica
-                const legalMoves = board.getAllLegalMoves(isWhite).length;
-                const enemyMoves = board.getAllLegalMoves(!isWhite).length;
-                score += (legalMoves - enemyMoves) * 1;
-
-                // 5. SEGURANÇA DO REI - Crítico
+                // 4. SEGURANÇA DO REI - Crítico
                 if (board.isKingInCheck(isWhite)) {
                     score -= 250;
                 }
 
-                // 6. XEQUE NO REI INIMIGO - Ofensivo
+                // 5. XEQUE NO REI INIMIGO - Ofensivo
                 if (board.isKingInCheck(!isWhite)) {
                     score += 200;
                 }
 
-                // 7. DESENVOLVIMENTO DE PEÇAS
-                for (let r = 0; r < 8; r++) {
-                    for (let c = 0; c < 8; c++) {
-                        const piece = board.getPiece(r, c);
-                        if (piece) {
-                            const type = piece.toLowerCase();
-                            if (type !== 'p' && type !== 'k') {
-                                const isInitialPos = (r === 0 || r === 7);
-                                const isWhitePiece = board.isWhite(piece);
-                                if (isInitialPos) {
-                                    if (isWhitePiece === isWhite) {
-                                        score -= 8;
-                                    } else {
-                                        score += 8;
-                                    }
-                                } else {
-                                    if (isWhitePiece === isWhite) {
-                                        score += 3;
-                                    } else {
-                                        score -= 3;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 8. AVANÇO DE PEÕES - Crítico no endgame
+                // 6. AVANÇO DE PEÕES - Crítico no endgame
                 for (let r = 0; r < 8; r++) {
                     for (let c = 0; c < 8; c++) {
                         const piece = board.getPiece(r, c);
@@ -1392,10 +1360,10 @@
             }
 
             getBestMove(board, isWhite) {
-                return this.getBestMoveTimed(board, isWhite, 350);
+                return this.getBestMoveTimed(board, isWhite, 250);
             }
 
-            getBestMoveTimed(board, isWhite, timeLimitMs = 350) {
+            getBestMoveTimed(board, isWhite, timeLimitMs = 250) {
                 const openingMove = this.getOpeningMove(board, isWhite);
                 if (openingMove) return openingMove;
 
@@ -1411,9 +1379,9 @@
 
                 // Profundidade adaptativa: menos peças = mais profundidade
                 let adaptiveDepth = this.maxDepth;
-                if (pieceCount > 24) adaptiveDepth = Math.min(3, this.maxDepth); // Abertura: mais rápido
-                else if (pieceCount > 16) adaptiveDepth = Math.min(4, this.maxDepth); // Meio-jogo
-                else adaptiveDepth = Math.min(5, this.maxDepth); // Final: mais profundo
+                if (pieceCount > 24) adaptiveDepth = Math.min(2, this.maxDepth); // Abertura: mais rápido
+                else if (pieceCount > 16) adaptiveDepth = Math.min(3, this.maxDepth); // Meio-jogo
+                else adaptiveDepth = Math.min(3, this.maxDepth); // Final: mais profundo
 
                 const startTime = Date.now();
                 let bestMove = null;
@@ -1426,8 +1394,15 @@
 
                 if (!bestMove) {
                     const legalMoves = board.getAllLegalMoves(isWhite);
-                    if (legalMoves.length > 0) {
-                        bestMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+                    let bestScore = -Infinity;
+                    for (const move of legalMoves) {
+                        const tempBoard = board.copy();
+                        tempBoard.makeMove(move.fromRow, move.fromCol, move);
+                        const score = this.evaluateBoard(tempBoard, isWhite);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = move;
+                        }
                     }
                 }
 
@@ -1438,7 +1413,7 @@
         class ChessGame {
             constructor(mode = 1) {
                 this.board = new ChessBoard();
-                this.ai = new ChessAI(5);
+                this.ai = new ChessAI(3);
                 this.mode = mode;
                 this.selectedSquare = null;
                 this.gameOver = false;
